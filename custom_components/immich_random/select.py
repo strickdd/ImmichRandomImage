@@ -93,7 +93,7 @@ class ImmichAlbumSelect(SelectEntity):
         """Set the album selection."""
         if option == "all":
             _LOGGER.info("Album selection cleared — random from entire library")
-            self._coordinator.set_album_ids([])
+            await self._coordinator.async_set_album_ids([])
         else:
             _LOGGER.info("Album selection set to: %s", option)
-            self._coordinator.set_album_ids([option])
+            await self._coordinator.async_set_album_ids([option])

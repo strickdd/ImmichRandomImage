@@ -62,12 +62,16 @@ class ImmichRandomHub:
             url = urljoin(self.host, "/api/auth/validateToken")
             headers = {"Accept": "application/json", _HEADER_API_KEY: self.api_key}
             async with session.post(url=url, headers=headers) as response:
-                if response.status != 200:
+                if response.status in (401, 403):
                     _LOGGER.error("Auth failed: status=%d", response.status)
                     return False
+                if response.status != 200:
+                    # A 5xx (e.g. Immich still starting behind a proxy) is not
+                    # a credentials problem; let the caller retry.
+                    raise CannotConnect(f"Unexpected status {response.status}")
                 result = await response.json()
                 return result.get("authStatus", False)
-        except aiohttp.ClientError as exception:
+        except (aiohttp.ClientError, TimeoutError) as exception:
             _LOGGER.error("Error connecting to the API: %s", exception)
             raise CannotConnect from exception
 

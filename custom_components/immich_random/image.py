@@ -58,19 +58,10 @@ class ImmichRandomImageEntity(ImageEntity):
         super().__init__(hass=hass, verify_ssl=coordinator.hub.verify_ssl)
         self._coordinator = coordinator
         self._config_entry = config_entry
-        album_ids = coordinator.hub.album_ids
-        if album_ids:
-            if len(album_ids) == 1:
-                self._attr_unique_id = f"immich_random_album_{album_ids[0]}"
-                self._attr_name = "Immich Random Album Image"
-            else:
-                self._attr_unique_id = (
-                    f"immich_random_albums_{'_'.join(album_ids[:3])}"
-                )
-                self._attr_name = "Immich Random Multi-Album Image"
-        else:
-            self._attr_unique_id = "immich_random"
-            self._attr_name = "Immich Random Image"
+        # Stable across album changes and scoped to the entry, so changing
+        # albums never orphans the entity and two entries never collide.
+        self._attr_unique_id = f"{config_entry.entry_id}_image"
+        self._attr_name = "Immich Random Image"
 
     @property
     def scan_interval(self) -> timedelta:
@@ -108,4 +99,4 @@ class ImmichRandomImageEntity(ImageEntity):
                 return datetime.fromisoformat(last_pulled)
             except (ValueError, TypeError):
                 pass
-        return self._coordinator.last_update_success_time
+        return None

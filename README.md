@@ -159,7 +159,7 @@ Add the entity to your dashboard using a Picture card or Picture Entity card:
 
 ```yaml
 type: picture-entity
-entity: image.immich_random_album_image
+entity: image.immich_random_image
 show_state: false
 show_name: false
 aspect_ratio: "16:9"
@@ -170,7 +170,7 @@ Or use it as a dashboard background image:
 
 ```yaml
 type: picture
-image_entity: image.immich_random_album_image
+image_entity: image.immich_random_image
 ```
 
 The entity refreshes every 5 minutes with a new random image. State attributes include `media_filename`, `media_localdatetime`, `media_width`, and `media_height`.
