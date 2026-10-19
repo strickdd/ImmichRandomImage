@@ -16,6 +16,13 @@
         "data": {
           "album_ids": "Albums"
         }
+      },
+      "reauth_confirm": {
+        "title": "Re-authenticate with Immich",
+        "description": "Immich at {host} rejected the stored API key. Enter a new API key to reconnect.",
+        "data": {
+          "api_key": "API Key"
+        }
       }
     },
     "error": {
@@ -24,7 +31,8 @@
       "unknown": "Unknown error occurred"
     },
     "abort": {
-      "already_configured": "This Immich instance is already configured"
+      "already_configured": "This Immich instance is already configured",
+      "reauth_successful": "Re-authentication was successful"
     }
   },
   "options": {

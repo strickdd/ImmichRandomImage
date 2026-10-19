@@ -44,5 +44,4 @@ class ImmichRefreshButton(ButtonEntity):
     async def async_press(self) -> None:
         """Handle the button press — fetch a new random image."""
         _LOGGER.info("Manual refresh button pressed")
-        self._coordinator.force_refresh()
         await self._coordinator.async_request_refresh()

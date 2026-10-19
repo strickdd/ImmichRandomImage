@@ -6,11 +6,12 @@ import logging
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_API_KEY, CONF_HOST, Platform
 from homeassistant.core import HomeAssistant
-from homeassistant.exceptions import HomeAssistantError
+from homeassistant.exceptions import ConfigEntryAuthFailed, ConfigEntryNotReady
+from homeassistant.helpers import entity_registry as er
 
 from .const import DEFAULT_SCAN_INTERVAL, DOMAIN, SERVICE_REFRESH
 from .coordinator import ImmichCoordinator
-from .hub import ImmichRandomHub
+from .hub import CannotConnect, ImmichRandomHub
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -36,8 +37,14 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         hass=hass,
     )
 
-    if not await hub.authenticate():
-        raise HomeAssistantError("Failed to authenticate with Immich")
+    try:
+        authenticated = await hub.authenticate()
+    except CannotConnect as err:
+        raise ConfigEntryNotReady(f"Cannot connect to Immich: {err}") from err
+    if not authenticated:
+        raise ConfigEntryAuthFailed("Immich rejected the API key")
+
+    _async_migrate_image_unique_id(hass, entry)
 
     scan_interval = entry.options.get(
         "scan_interval",
@@ -67,7 +74,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                 continue
             coord: ImmichCoordinator = entry_data["coordinator"]
             _LOGGER.info("Manual refresh triggered for entry %s", eid)
-            coord.force_refresh()
             await coord.async_request_refresh()
 
     hass.services.async_register(DOMAIN, SERVICE_REFRESH, _handle_refresh)
@@ -82,6 +88,37 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     if unload_ok := await hass.config_entries.async_unload_platforms(entry, PLATFORMS):
         hass.data[DOMAIN].pop(entry.entry_id)
     return unload_ok
+
+
+def _async_migrate_image_unique_id(hass: HomeAssistant, entry: ConfigEntry) -> None:
+    """Move the image entity from its legacy unique_id to the stable one.
+
+    Before 1.3.0 the image unique_id was derived from the album selection
+    ("immich_random", "immich_random_album_<id>", "immich_random_albums_..."),
+    so it changed whenever albums did. Re-keying the existing registry entry
+    keeps the user's entity_id, name, area and history.
+    """
+    registry = er.async_get(hass)
+    new_unique_id = f"{entry.entry_id}_image"
+    if registry.async_get_entity_id("image", DOMAIN, new_unique_id):
+        return
+
+    for entity_entry in er.async_entries_for_config_entry(registry, entry.entry_id):
+        if entity_entry.domain == "image" and entity_entry.unique_id.startswith(
+            "immich_random"
+        ):
+            _LOGGER.info(
+                "Migrating %s unique_id %s -> %s",
+                entity_entry.entity_id,
+                entity_entry.unique_id,
+                new_unique_id,
+            )
+            registry.async_update_entity(
+                entity_entry.entity_id, new_unique_id=new_unique_id
+            )
+            # Any further legacy entries were already orphaned by an earlier
+            # album change; leave them for the user to remove.
+            return
 
 
 async def _async_update_listener(

@@ -7,10 +7,10 @@ from typing import Any
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
+from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 from .const import DEFAULT_SCAN_INTERVAL, DOMAIN
-from .hub import ImmichRandomHub
+from .hub import CannotConnect, ImmichRandomHub
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -39,7 +39,6 @@ class ImmichCoordinator(DataUpdateCoordinator):
         self.config_entry = config_entry
         self.image_bytes: bytes | None = None
         self.albums: list[dict] = []
-        self._force_refresh = False
 
         scan_interval = config_entry.options.get(
             "scan_interval", DEFAULT_SCAN_INTERVAL
@@ -59,11 +58,6 @@ class ImmichCoordinator(DataUpdateCoordinator):
         """Return the configured scan interval in seconds."""
         return self._scan_interval_seconds
 
-    def force_refresh(self) -> None:
-        """Flag that the next update should run regardless of interval."""
-        self._force_refresh = True
-        self.async_set_updated_time(datetime.now())
-
     async def _async_update_data(self) -> dict[str, Any]:
         """Fetch a new random image from Immich.
 
@@ -72,6 +66,13 @@ class ImmichCoordinator(DataUpdateCoordinator):
         """
         _LOGGER.debug("Coordinator fetching new random image from %s", self.hub.host)
 
+        try:
+            return await self._async_fetch_random_image()
+        except CannotConnect as err:
+            raise UpdateFailed(f"Error communicating with Immich: {err}") from err
+
+    async def _async_fetch_random_image(self) -> dict[str, Any]:
+        """Fetch and download one random image; keep the old data on a miss."""
         asset = await self.hub.get_random_image()
         if not asset:
             _LOGGER.warning("No random image returned from Immich")
@@ -123,8 +124,8 @@ class ImmichCoordinator(DataUpdateCoordinator):
             _LOGGER.warning("Failed to fetch albums: %s", err)
             self.albums = []
 
-    def set_album_ids(self, album_ids: list[str]) -> None:
+    async def async_set_album_ids(self, album_ids: list[str]) -> None:
         """Update the active album selection (called by the select entity)."""
         self.hub.album_ids = album_ids
-        _LOGGER.info("Album selection updated to %d albums, forcing refresh", len(album_ids))
-        self.force_refresh()
+        _LOGGER.info("Album selection updated to %d albums, refreshing", len(album_ids))
+        await self.async_request_refresh()
