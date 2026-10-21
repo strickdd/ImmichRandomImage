@@ -133,8 +133,8 @@ The API key needs the following Immich permissions:
 | Permission | Why |
 |---|---|
 | `album.read` | List albums for the album picker (optional — only needed if selecting specific albums) |
-| `asset.read` | Download image originals |
-| `search.read` | Use the `/api/search/random` endpoint |
+| `asset.read` | Use the `/api/search/random` endpoint |
+| `asset.download` | Download image originals (`/api/assets/{id}/original`) |
 
 You do **not** need `user.read` or any admin-level permissions. The integration authenticates via `/api/auth/validateToken`, which requires no special permissions.
 
@@ -183,7 +183,7 @@ The integration uses Immich's `/api/search/random` endpoint (introduced in Immic
 
 - Home Assistant 2024.1+ (tested on 2026.8.0)
 - Immich v3+ running and accessible from your Home Assistant instance
-- A long-lived Immich API key with `asset.read` and `search.read` permissions
+- A long-lived Immich API key with `asset.read` and `asset.download` permissions (plus `album.read` for the album picker)
 
 ## Development
 
