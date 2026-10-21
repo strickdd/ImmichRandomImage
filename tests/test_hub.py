@@ -1,7 +1,9 @@
 """Tests for URL normalization and SSL context — no HA imports needed."""
 import ssl
 import sys
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
+
+import pytest
 
 # We need to stub out homeassistant before importing our module,
 # since HA isn't installed in the test environment.
@@ -147,3 +149,38 @@ def test_hub_init_empty_album_ids():
         album_ids=[],
     )
     assert hub.album_ids == []
+
+
+@pytest.mark.parametrize("hass", [None, object()])
+def test_hub_initialization_does_not_load_certificates(hass):
+    """Constructing a hub never reads the CA store, even without HA."""
+    with patch(
+        "custom_components.immich_random.hub.ssl.create_default_context",
+        side_effect=AssertionError("Certificate store read during hub construction"),
+    ):
+        ImmichRandomHub(
+            host="https://immich.local",
+            api_key="test-key",
+            verify_ssl=False,
+            hass=hass,
+        )
+
+
+@pytest.mark.parametrize("verify_ssl", [True, False])
+@pytest.mark.asyncio
+async def test_fallback_session_creates_ssl_context_only_when_requested(verify_ssl):
+    """The no-HA fallback still configures TLS, but only at session creation."""
+    with patch(
+        "custom_components.immich_random.hub._create_ssl_context",
+        wraps=_create_ssl_context,
+    ) as create_context:
+        hub = ImmichRandomHub(
+            host="https://immich.local",
+            api_key="test-key",
+            verify_ssl=verify_ssl,
+        )
+        create_context.assert_not_called()
+        async with hub._get_session() as session:
+            assert not session.closed
+            create_context.assert_called_once_with(verify_ssl)
+        assert session.closed

@@ -40,7 +40,6 @@ class ImmichRandomHub:
         self.api_key = api_key
         self.album_ids = album_ids or []
         self.verify_ssl = verify_ssl
-        self._ssl_context = _create_ssl_context(verify_ssl)
         self._hass = hass
 
     def _get_session(self) -> aiohttp.ClientSession:
@@ -48,7 +47,7 @@ class ImmichRandomHub:
         if self._hass is not None:
             return async_get_clientsession(self._hass, verify_ssl=self.verify_ssl)
         # Fallback for when hass is not available (e.g. in tests)
-        connector = aiohttp.TCPConnector(ssl=self._ssl_context)
+        connector = aiohttp.TCPConnector(ssl=_create_ssl_context(self.verify_ssl))
         return aiohttp.ClientSession(connector=connector)
 
     async def authenticate(self) -> bool:

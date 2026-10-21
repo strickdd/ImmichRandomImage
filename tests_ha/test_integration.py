@@ -11,10 +11,11 @@ from homeassistant.config_entries import ConfigEntryState
 from homeassistant.const import CONF_API_KEY, CONF_HOST
 from homeassistant.data_entry_flow import FlowResultType
 from homeassistant.helpers import entity_registry as er
+from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.immich_random.const import DOMAIN
-from custom_components.immich_random.hub import CannotConnect
+from custom_components.immich_random.hub import CannotConnect, ImmichRandomHub
 
 HUB = "custom_components.immich_random.hub.ImmichRandomHub"
 ASSET = {
@@ -59,6 +60,24 @@ async def _setup(hass, entry: MockConfigEntry) -> None:
     entry.add_to_hass(hass)
     await hass.config_entries.async_setup(entry.entry_id)
     await hass.async_block_till_done()
+
+
+@pytest.mark.parametrize("verify_ssl", [True, False])
+async def test_hub_uses_ha_session_without_building_ssl_context(hass, verify_ssl):
+    """HA owns TLS sessions; hub construction must not load certificates."""
+    with patch(
+        "custom_components.immich_random.hub._create_ssl_context",
+        side_effect=AssertionError("Hub must use Home Assistant's managed TLS"),
+    ):
+        hub = ImmichRandomHub(
+            host="https://immich.test",
+            api_key="test-key",
+            verify_ssl=verify_ssl,
+            hass=hass,
+        )
+        assert hub._get_session() is async_get_clientsession(
+            hass, verify_ssl=verify_ssl
+        )
 
 
 async def test_refresh_paths_do_not_raise(hass, mock_immich):
