@@ -109,7 +109,7 @@ action:
 
 Install via [HACS](https://hacs.xyz) (Home Assistant Community Store).
 
-[![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?repository=ha-random-immich&category=Integration&owner=strickdd)
+[![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?repository=ImmichRandomImage&category=Integration&owner=strickdd)
 
 1. Click the button above, or open HACS → Integrations → ⋮ → Custom repositories
 2. Add `https://github.com/strickdd/ImmichRandomImage` as an Integration repository
