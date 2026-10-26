@@ -10,6 +10,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import DOMAIN
 from .coordinator import ImmichCoordinator
+from .entity import entity_name
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -61,7 +62,7 @@ class ImmichAlbumSelect(SelectEntity):
         self._coordinator = coordinator
         self._config_entry = config_entry
         self._attr_unique_id = f"{config_entry.entry_id}_album_select"
-        self._attr_name = "Immich Album Selection"
+        self._attr_name = entity_name(config_entry, "Album Selection")
 
     @property
     def options(self) -> list[str]:

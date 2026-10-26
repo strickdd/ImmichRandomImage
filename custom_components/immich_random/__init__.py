@@ -52,7 +52,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     )
 
     coordinator = ImmichCoordinator(hass, hub, entry)
-    coordinator._scan_interval_seconds = int(scan_interval)
+    await coordinator.async_config_entry_first_refresh()
 
     # Fetch albums for the select entity
     await coordinator.async_refresh_albums()

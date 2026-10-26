@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Any
 
 from homeassistant.config_entries import ConfigEntry
@@ -41,14 +41,15 @@ class ImmichCoordinator(DataUpdateCoordinator):
         self.albums: list[dict] = []
 
         scan_interval = config_entry.options.get(
-            "scan_interval", DEFAULT_SCAN_INTERVAL
+            "scan_interval", config_entry.data.get("scan_interval", DEFAULT_SCAN_INTERVAL)
         )
 
         super().__init__(
             hass,
             _LOGGER,
             name=f"{DOMAIN}_{config_entry.entry_id[:8]}",
-            update_interval=None,  # We poll manually or on scan interval
+            config_entry=config_entry,
+            update_interval=timedelta(seconds=int(scan_interval)) if scan_interval else None,
             update_method=self._async_update_data,
         )
         self._scan_interval_seconds = int(scan_interval)
