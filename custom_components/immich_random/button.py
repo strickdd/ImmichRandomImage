@@ -10,6 +10,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import DOMAIN
 from .coordinator import ImmichCoordinator
+from .entity import entity_name
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -39,7 +40,7 @@ class ImmichRefreshButton(ButtonEntity):
         """Initialize the button."""
         self._coordinator = coordinator
         self._attr_unique_id = f"{config_entry.entry_id}_refresh"
-        self._attr_name = "Immich Refresh Image"
+        self._attr_name = entity_name(config_entry, "Refresh Image")
 
     async def async_press(self) -> None:
         """Handle the button press — fetch a new random image."""

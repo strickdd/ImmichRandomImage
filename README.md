@@ -10,13 +10,17 @@ I got tired of old Home Assistant add-ons that would break when Immich updated t
 
 ## Screenshots
 
-| Configuration | Entities |
+| Setup with an optional name | Manual-only refresh settings |
 |---|---|
-| ![Configuration options](screenshots/configuration-options.png) | ![Entities](screenshots/entities.png) |
+| ![Setup with the Living Room base name](screenshots/setup-name.png) | ![Options with refresh interval set to 0 for manual-only rotation](screenshots/configuration-options.png) |
+
+![All five entities using the Living Room name](screenshots/entities.png)
 
 | Album Selection | Refresh on Demand |
 |---|---|
 | ![Album selection](screenshots/album-selection.png) | ![Refresh button](screenshots/refresh-button.png) |
+
+Captured from a real Home Assistant 2026.2.3 instance running v1.4.0, using an isolated demo Immich API fixture and explicitly labeled demo albums. No household photos or credentials are shown.
 
 ## Features
 
@@ -25,7 +29,8 @@ I got tired of old Home Assistant add-ons that would break when Immich updated t
 - **Random image from multiple albums** — select multiple albums; the integration picks randomly across all of them
 - **SSL toggle** — disable SSL verification for self-hosted instances without valid certificates
 - **URL normalization** — handles `localhost`, `127.0.0.1`, private IPs, bare hostnames, and full domain names
-- **Configurable refresh interval** — new image every 5 minutes by default; adjustable from 1 second to 24 hours (60-300 seconds recommended)
+- **Named entries** - optionally set a base name during setup for all five entities
+- **Configurable refresh interval** - new image every 5 minutes by default; adjustable from 1 second to 24 hours (60-300 seconds recommended), or 0 for manual-only refresh
 - **No external dependencies** — uses only `aiohttp` (bundled with Home Assistant)
 
 ## Entities
@@ -39,6 +44,12 @@ The integration creates the following entities:
 | `sensor.immich_image_filename` | Sensor | Filename of the current image (with dimensions and date as attributes) |
 | `button.immich_refresh_image` | Button | Triggers a manual refresh — fetches a new random image immediately |
 | `select.immich_album_selection` | Select | Dynamically change album selection from automations |
+
+### Optional entity base name
+
+Choose a **Name** during setup, such as `Living Room`, to create names like `Living Room Random Image`, `Living Room Refresh Image`, and the corresponding album-selection and metadata entities. The image entity ID will normally be `image.living_room_random_image`. Home Assistant generates valid IDs and adds a suffix when names collide.
+
+Leaving Name blank preserves the defaults above. Existing entity IDs and custom names are not changed on upgrade, so dashboards and automations keep working. Renaming an integration entry later does not bulk-rename its entity IDs; existing entities can be renamed in Home Assistant's entity settings. Use your actual entity IDs in the examples below.
 
 ## Services
 
@@ -147,11 +158,18 @@ If your key is missing a permission, Immich returns `403 Missing required permis
 1. Click the button above, or go to **Settings → Devices & Services → Add Integration**
 2. Search for "Immich Random Image"
 3. Enter your Immich server URL and API key
+   - Optionally enter a Name to identify this entry and all five entities
    - Toggle SSL verification off if your self-hosted instance uses self-signed certificates
 4. After setup, click **Configure** on the integration to select which albums to pull from
    - Leave all albums unchecked for a fully random image from your entire library
    - Select one album for random images from that album only
    - Select multiple albums for random images across all selected albums
+
+### Manual-only refresh
+
+In **Configure**, set **Refresh interval** to `0` to disable timed rotation. The integration fetches one initial image when it starts or reloads, then keeps that image until you press its refresh button, call `immich_random.refresh`, explicitly update the entity, or change the album selection. Reading a cached image on a dashboard does not rotate it.
+
+Use the motion automation above for fully automation-controlled rotation. Set a positive interval to resume timed rotation. Changing options reloads the entry and fetches an initial image; images are not persisted across Home Assistant restarts.
 
 ## Usage
 
@@ -173,7 +191,7 @@ type: picture
 image_entity: image.immich_random_image
 ```
 
-The entity refreshes every 5 minutes with a new random image. State attributes include `media_filename`, `media_localdatetime`, `media_width`, and `media_height`.
+The entity refreshes every 5 minutes by default, or uses your configured interval (0 disables timed rotation). Image and sensor metadata update together on refresh. State attributes include `media_filename`, `media_localdatetime`, `media_width`, and `media_height`.
 
 ## How it works
 
@@ -181,7 +199,7 @@ The integration uses Immich's `/api/search/random` endpoint (introduced in Immic
 
 ## Requirements
 
-- Home Assistant 2024.1+ (tested on 2026.8.0)
+- Home Assistant 2026.2.3+ (real-Home-Assistant tests run on 2026.2.3)
 - Immich v3+ running and accessible from your Home Assistant instance
 - A long-lived Immich API key with `asset.read` and `asset.download` permissions (plus `album.read` for the album picker)
 

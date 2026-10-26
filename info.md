@@ -11,7 +11,8 @@ Display random images from your Immich v3+ instance on your Home Assistant dashb
 - Works with localhost, private IPs, and domain names
 - No external Python dependencies
 - Configurable via UI (config flow + options flow)
-- Refreshes every 5 minutes with a new random image
+- Optional setup name shared by all five entity defaults
+- Configurable rotation (5 minutes by default), or interval 0 for manual-only refresh
 
 ## Installation
 

@@ -2,26 +2,19 @@
 from __future__ import annotations
 
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime
 
 from homeassistant.components.image import ImageEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import DEFAULT_SCAN_INTERVAL, DOMAIN
+from .const import DOMAIN
 from .coordinator import ImmichCoordinator
+from .entity import entity_name
 
 _LOGGER = logging.getLogger(__name__)
-
-
-def _get_scan_interval(config_entry: ConfigEntry) -> timedelta:
-    """Get the scan interval from config entry options."""
-    seconds = config_entry.options.get(
-        "scan_interval",
-        config_entry.data.get("scan_interval", DEFAULT_SCAN_INTERVAL),
-    )
-    return timedelta(seconds=int(seconds))
 
 
 async def async_setup_entry(
@@ -43,10 +36,9 @@ async def async_setup_entry(
     async_add_entities([ImmichRandomImageEntity(hass, coordinator, config_entry)])
 
 
-class ImmichRandomImageEntity(ImageEntity):
+class ImmichRandomImageEntity(CoordinatorEntity, ImageEntity):
     """Image entity that displays a random image from Immich."""
 
-    _attr_should_poll = True
 
     def __init__(
         self,
@@ -55,18 +47,14 @@ class ImmichRandomImageEntity(ImageEntity):
         config_entry: ConfigEntry,
     ) -> None:
         """Initialize the entity."""
-        super().__init__(hass=hass, verify_ssl=coordinator.hub.verify_ssl)
+        ImageEntity.__init__(self, hass=hass, verify_ssl=coordinator.hub.verify_ssl)
+        CoordinatorEntity.__init__(self, coordinator)
         self._coordinator = coordinator
         self._config_entry = config_entry
         # Stable across album changes and scoped to the entry, so changing
         # albums never orphans the entity and two entries never collide.
         self._attr_unique_id = f"{config_entry.entry_id}_image"
-        self._attr_name = "Immich Random Image"
-
-    @property
-    def scan_interval(self) -> timedelta:
-        """Return the scan interval for this entity."""
-        return _get_scan_interval(self._config_entry)
+        self._attr_name = entity_name(config_entry, "Random Image")
 
     async def async_update(self) -> None:
         """Fetch a new random image via the coordinator."""

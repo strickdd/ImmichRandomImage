@@ -3,8 +3,9 @@
     "step": {
       "user": {
         "title": "Connect to Immich",
-        "description": "Enter your Immich server URL and API key. You can generate a long-lived API key in Immich under Settings > API Keys.",
+        "description": "Enter your Immich server URL and API key. You can generate a long-lived API key in Immich under Settings > API Keys. Optionally choose a name (for example, Living Room) for this entry and its five entities.",
         "data": {
+          "name": "Name (optional)",
           "host": "Server URL",
           "api_key": "API Key",
           "verify_ssl": "Verify SSL certificate"
@@ -44,7 +45,7 @@
           "host": "Server URL",
           "api_key": "API Key",
           "verify_ssl": "Verify SSL certificate",
-          "scan_interval": "Refresh interval (seconds, 60-300 recommended)",
+          "scan_interval": "Refresh interval (seconds, 0 for manual only, 60-300 recommended)",
           "album_ids": "Albums"
         }
       }

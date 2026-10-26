@@ -7,9 +7,11 @@ from homeassistant.components.sensor import SensorEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import DOMAIN
 from .coordinator import ImmichCoordinator
+from .entity import entity_name
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -31,7 +33,7 @@ async def async_setup_entry(
     )
 
 
-class ImmichLastPulledSensor(SensorEntity):
+class ImmichLastPulledSensor(CoordinatorEntity, SensorEntity):
     """Sensor that reports when the last random image was pulled."""
 
     _attr_icon = "mdi:clock-outline"
@@ -42,9 +44,10 @@ class ImmichLastPulledSensor(SensorEntity):
         config_entry: ConfigEntry,
     ) -> None:
         """Initialize the sensor."""
+        super().__init__(coordinator)
         self._coordinator = coordinator
         self._attr_unique_id = f"{config_entry.entry_id}_last_pulled"
-        self._attr_name = "Immich Last Image Pulled"
+        self._attr_name = entity_name(config_entry, "Last Image Pulled")
 
     @property
     def native_value(self) -> str:
@@ -61,7 +64,7 @@ class ImmichLastPulledSensor(SensorEntity):
         }
 
 
-class ImmichFilenameSensor(SensorEntity):
+class ImmichFilenameSensor(CoordinatorEntity, SensorEntity):
     """Sensor that exposes the current image filename."""
 
     _attr_icon = "mdi:file-image"
@@ -72,9 +75,10 @@ class ImmichFilenameSensor(SensorEntity):
         config_entry: ConfigEntry,
     ) -> None:
         """Initialize the sensor."""
+        super().__init__(coordinator)
         self._coordinator = coordinator
         self._attr_unique_id = f"{config_entry.entry_id}_filename"
-        self._attr_name = "Immich Image Filename"
+        self._attr_name = entity_name(config_entry, "Image Filename")
 
     @property
     def native_value(self) -> str:

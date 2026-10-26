@@ -8,7 +8,7 @@ from urllib.parse import urlparse
 
 import voluptuous as vol
 from homeassistant import config_entries
-from homeassistant.const import CONF_API_KEY, CONF_HOST
+from homeassistant.const import CONF_API_KEY, CONF_HOST, CONF_NAME
 from homeassistant.core import callback
 from homeassistant.data_entry_flow import FlowResult
 from homeassistant.helpers import config_validation as cv
@@ -23,6 +23,8 @@ from .const import (
     CONF_VERIFY_SSL,
     DEFAULT_SCAN_INTERVAL,
     DOMAIN,
+    MAX_SCAN_INTERVAL,
+    MIN_SCAN_INTERVAL,
 )
 from .hub import CannotConnect, ImmichRandomHub, InvalidAuth
 
@@ -92,12 +94,14 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             else:
                 # Store validated credentials for the album step
                 self._credentials = result["data"]
+                self._credentials[CONF_NAME] = user_input.get(CONF_NAME, "").strip()
                 return await self.async_step_album()
 
         return self.async_show_form(
             step_id="user",
             data_schema=vol.Schema(
                 {
+                    vol.Optional(CONF_NAME): str,
                     vol.Required(CONF_HOST): str,
                     vol.Required(CONF_API_KEY): TextSelector(
                         TextSelectorConfig(type=TextSelectorType.PASSWORD)
@@ -122,7 +126,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             data[CONF_ALBUM_IDS] = user_input.get(CONF_ALBUM_IDS, [])
             hostname = urlparse(self._credentials[CONF_HOST]).hostname
             return self.async_create_entry(
-                title=f"Immich @ {hostname}", data=data
+                title=data.get(CONF_NAME) or f"Immich @ {hostname}", data=data
             )
 
         # Fetch albums using the validated credentials
@@ -143,7 +147,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             data[CONF_ALBUM_IDS] = []
             hostname = urlparse(self._credentials[CONF_HOST]).hostname
             return self.async_create_entry(
-                title=f"Immich @ {hostname}", data=data
+                title=data.get(CONF_NAME) or f"Immich @ {hostname}", data=data
             )
 
         album_map = {album["id"]: album["albumName"] for album in albums}
@@ -154,7 +158,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             data[CONF_ALBUM_IDS] = []
             hostname = urlparse(self._credentials[CONF_HOST]).hostname
             return self.async_create_entry(
-                title=f"Immich @ {hostname}", data=data
+                title=data.get(CONF_NAME) or f"Immich @ {hostname}", data=data
             )
 
         return self.async_show_form(
@@ -376,7 +380,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             vol.Optional(
                 "scan_interval",
                 default=scan_interval,
-            ): vol.All(vol.Coerce(int), vol.Range(min=1, max=86400)),
+            ): vol.All(vol.Coerce(int), vol.Range(min=MIN_SCAN_INTERVAL, max=MAX_SCAN_INTERVAL)),
         }
 
         if album_map:
