@@ -82,7 +82,7 @@ jobs:
           zip -r immich_random.zip immich_random/
 
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           name: v${{ steps.version.outputs.VERSION }}
           generate_release_notes: true
